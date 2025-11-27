@@ -5,6 +5,7 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
@@ -48,8 +49,9 @@ public class PaidGrantBatch {
 		// DB接続設定
 		DatabaseConfigurator.configureDatabaseProperties();
 
-		// Springコンテナを起動し、PaidAcquisition インスタンスを取得
-		try (ConfigurableApplicationContext context = SpringApplication.run(PaidGrantBatch.class, args)) {
+		SpringApplication application = new SpringApplication(PaidGrantBatch.class);
+		application.setWebApplicationType(WebApplicationType.NONE);
+		try (ConfigurableApplicationContext context = application.run(args)) {
 			// コンテナから PaidAcquisition の Bean (DI済みインスタンス) を取得する
 			PaidGrantBatch batch = context.getBean(PaidGrantBatch.class);
 

@@ -4,6 +4,7 @@ import java.time.YearMonth;
 import java.util.List;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
@@ -57,8 +58,9 @@ public class PaidAcquisitionBatch {
 		// DB接続設定
 		DatabaseConfigurator.configureDatabaseProperties();
 
-		// Springコンテナを起動し、PaidAcquisition インスタンスを取得
-		try (ConfigurableApplicationContext context = SpringApplication.run(PaidAcquisitionBatch.class, args)) {
+		SpringApplication application = new SpringApplication(PaidAcquisitionBatch.class);
+		application.setWebApplicationType(WebApplicationType.NONE);
+		try (ConfigurableApplicationContext context = application.run(args)) {
 			// コンテナから PaidAcquisition の Bean (DI済みインスタンス) を取得する
 			PaidAcquisitionBatch batch = context.getBean(PaidAcquisitionBatch.class);
 

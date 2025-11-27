@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.springframework.boot.SpringApplication;
+import org.springframework.boot.WebApplicationType;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
@@ -37,7 +38,8 @@ public class AttendanceCreateBatch {
 	private final UserFlowService userFlowService;
 	private final AttendanceService attendanceService;
 
-	public AttendanceCreateBatch(EmployeeService employeeService, UserFlowService userFlowService, AttendanceService attendanceService) {
+	public AttendanceCreateBatch(EmployeeService employeeService, UserFlowService userFlowService,
+			AttendanceService attendanceService) {
 		this.employeeService = employeeService;
 		this.userFlowService = userFlowService;
 		this.attendanceService = attendanceService;
@@ -49,8 +51,9 @@ public class AttendanceCreateBatch {
 		// DB接続設定
 		DatabaseConfigurator.configureDatabaseProperties();
 
-		// Springコンテナを起動し、PaidAcquisition インスタンスを取得
-		try (ConfigurableApplicationContext context = SpringApplication.run(AttendanceCreateBatch.class, args)) {
+		SpringApplication application = new SpringApplication(AttendanceCreateBatch.class);
+		application.setWebApplicationType(WebApplicationType.NONE);
+		try (ConfigurableApplicationContext context = application.run(args)) {
 			// コンテナから PaidAcquisition の Bean (DI済みインスタンス) を取得する
 			AttendanceCreateBatch batch = context.getBean(AttendanceCreateBatch.class);
 
@@ -59,7 +62,7 @@ public class AttendanceCreateBatch {
 
 		} catch (Exception e) {
 			System.out.println("--- 対象月の勤怠管理簿作成処理中にエラーが発生しました（main）: " + e);
-			e.printStackTrace(); 
+			e.printStackTrace();
 		}
 
 		System.out.println("--- AttendanceCreateBatchバッチ処理を終了 ---");
@@ -74,7 +77,7 @@ public class AttendanceCreateBatch {
 			// 勤務先区分マスター読込処理
 			List<PlaceCategoryDto> placeCategoryList = userFlowService.findByPlaceCategoryList();
 			PlaceCategoryRegistry.initialize(placeCategoryList);
-			
+
 			// 社員アカウント一覧データ取得
 			List<UserDto> userLists = employeeService.findByUsersList(CommonConstants.UNSELECTED_CODE);
 			userLists.stream()
