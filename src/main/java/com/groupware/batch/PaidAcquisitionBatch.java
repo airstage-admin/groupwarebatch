@@ -9,6 +9,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 
+import com.groupware.batch.service.GroupBatchService;
 import com.groupware.common.config.DatabaseConfigurator;
 import com.groupware.common.constant.CommonConstants;
 import com.groupware.common.model.DepartmentType;
@@ -38,13 +39,15 @@ public class PaidAcquisitionBatch {
 	private final AttendanceDao attendanceDao;
 	private final UserDao userDao;
 	private final UserFlowService userFlowService;
-
+	private final GroupBatchService groupBatchService;
+	
 	public PaidAcquisitionBatch(EmployeeService employeeService, AttendanceDao attendanceDao, UserDao userDao,
-			UserFlowService userFlowService) {
+			UserFlowService userFlowService, GroupBatchService groupBatchService) {
 		this.employeeService = employeeService;
 		this.attendanceDao = attendanceDao;
 		this.userDao = userDao;
 		this.userFlowService = userFlowService;
+		this.groupBatchService = groupBatchService;
 	}
 
 	public static void main(String[] args) {
@@ -77,6 +80,12 @@ public class PaidAcquisitionBatch {
 
 	private void executeBatchLogic(String yearMonthStr) {
 		try {
+			// 実行チェック
+			if (groupBatchService.isBatchExecution(CommonConstants.PAID_ACQUISITION_BATCH)) {
+				System.out.println("--- PaidAcquisitionBatchバッチ処理を終了（実行済） ---");
+				System.exit(0);
+			}
+			
 			YearMonth ym = YearMonth.parse(yearMonthStr);
 
 			// 部署マスター読込処理
@@ -100,7 +109,14 @@ public class PaidAcquisitionBatch {
 					.forEach(userRs -> {
 						paidLeaveAcquisitionProcessing(userRs, ym);
 					});
+			
+			// バッチ実行履歴書込み
+			groupBatchService.insert(CommonConstants.PAID_ACQUISITION_BATCH, true);
+			
 		} catch (Exception e) {
+			// バッチ実行履歴書込み
+			groupBatchService.insert(CommonConstants.PAID_ACQUISITION_BATCH, false);
+			
 			System.out.println("--- 有給取得処理中にエラーが発生しました（executeBatchLogic）: " + e);
 			e.printStackTrace();
 		}

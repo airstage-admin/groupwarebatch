@@ -13,6 +13,7 @@ import org.springframework.context.ConfigurableApplicationContext;
 import org.springframework.context.annotation.ComponentScan;
 
 import com.groupware.attendance.service.AttendanceService;
+import com.groupware.batch.service.GroupBatchService;
 import com.groupware.common.config.DatabaseConfigurator;
 import com.groupware.common.constant.CommonConstants;
 import com.groupware.common.model.DepartmentType;
@@ -37,12 +38,14 @@ public class AttendanceCreateBatch {
 	private final EmployeeService employeeService;
 	private final UserFlowService userFlowService;
 	private final AttendanceService attendanceService;
-
+	private final GroupBatchService groupBatchService;
+	
 	public AttendanceCreateBatch(EmployeeService employeeService, UserFlowService userFlowService,
-			AttendanceService attendanceService) {
+			AttendanceService attendanceService, GroupBatchService groupBatchService) {
 		this.employeeService = employeeService;
 		this.userFlowService = userFlowService;
 		this.attendanceService = attendanceService;
+		this.groupBatchService = groupBatchService;
 	}
 
 	public static void main(String[] args) {
@@ -70,6 +73,12 @@ public class AttendanceCreateBatch {
 
 	private void executeBatchLogic() {
 		try {
+			// 実行チェック
+			if (groupBatchService.isBatchExecution(CommonConstants.ATTENDANCE_CREATE_BATCH)) {
+				System.out.println("--- AttendanceCreateBatchバッチ処理を終了（実行済） ---");
+				System.exit(0);
+			}
+			
 			// 部署マスター読込処理
 			List<DepartmentTypeDto> departmentList = userFlowService.findByDepartmentList();
 			DepartmentRegistry.initialize(departmentList);
@@ -89,10 +98,17 @@ public class AttendanceCreateBatch {
 					})
 					// フィルタリングされたユーザーに対して、付与処理と取得処理を実行
 					.forEach(userRs -> {
-						// 有給付与処理
+						// 勤怠管理簿作成処理
 						createIntialAttendance(userRs.getId());
 					});
+			
+			// バッチ実行履歴書込み
+			groupBatchService.insert(CommonConstants.ATTENDANCE_CREATE_BATCH, true);
+			
 		} catch (Exception e) {
+			// バッチ実行履歴書込み
+			groupBatchService.insert(CommonConstants.ATTENDANCE_CREATE_BATCH, false);
+			
 			System.out.println("--- 対象月の勤怠管理簿作成処理中にエラーが発生しました（executeBatchLogic）: " + e);
 			e.printStackTrace();
 		}
