@@ -89,7 +89,7 @@ public class AttendanceCreateBatch {
 					})
 					// フィルタリングされたユーザーに対して、付与処理と取得処理を実行
 					.forEach(userRs -> {
-						// 有給付与処理
+						// 勤怠管理簿作成処理
 						createIntialAttendance(userRs.getId());
 					});
 		} catch (Exception e) {
