@@ -1,6 +1,7 @@
 package com.groupware.batch;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 
@@ -121,6 +122,9 @@ public class PaidGrantBatch {
 
 			// 有給付与処理
 			LocalDate paidGrantDate = LocalDate.parse(dto.getPaidGrantDate(), CommonConstants.DATE_FORMAT);
+			LocalDate hireDate = LocalDate.parse(dto.getHireDate(), CommonConstants.DATE_FORMAT);
+			LocalDate today = LocalDate.now();
+			
 			// 有給付与日を過ぎたら（当日含む）付与
 			if (!LocalDate.now().isBefore(paidGrantDate)) {
 				int beforePaidGrant = dto.getPaidLeaveGranted(); // 前回の有給付与日数
@@ -136,8 +140,9 @@ public class PaidGrantBatch {
 				paidLeaveRemaining += paidLeaveGranted;
 
 				// 有給付与日、有給付与日数、有給残日数の更新
+				LocalDate nextPaidGrantDate = ChronoUnit.YEARS.between(hireDate, today) < 1 ? calculateTargetDate(hireDate) : paidGrantDate.plusYears(1);
 				userDao.paidLeaveUpdate(dto.getId(),
-						paidGrantDate.plusYears(1).format(CommonConstants.STRDATE_FORMAT), paidLeaveGranted,
+						nextPaidGrantDate.format(CommonConstants.STRDATE_FORMAT), paidLeaveGranted,
 						paidLeaveRemaining);
 			}
 
@@ -146,4 +151,22 @@ public class PaidGrantBatch {
 			e.printStackTrace();
 		}
 	}
+	
+	/**
+     * 入社日に基づいて対象日を計算する
+     * 
+     * @param　hireDate 入社日
+	 * @return
+     */
+    public static LocalDate calculateTargetDate(LocalDate hireDate) {
+        // 1/1 ～ 6/30 の判定
+        if (hireDate.getMonthValue() <= 6) {
+            // 翌年の7月1日
+            return hireDate.plusYears(1).withMonth(Month.JULY.getValue()).withDayOfMonth(1);
+        } else {
+            // 7/1 ～ 12/31 の場合
+            // 翌々年の1月1日
+            return hireDate.plusYears(2).withMonth(Month.JANUARY.getValue()).withDayOfMonth(1);
+        }
+    }
 }
